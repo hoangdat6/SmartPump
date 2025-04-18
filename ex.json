@@ -1,0 +1,82 @@
+{
+    "devices": {
+      "device1": {
+        "name": "Máy bơm nhà",
+        "status": {
+          "connected": true,
+          "isPumpOn": true,
+          "waterLevel": 75,
+          "wifiConnected": true,
+          "espConnected": true,
+          "currentEventKey": "evt_123456789",
+          "lastUpdated": "2025-04-16T14:05:00Z"
+        },
+        "settings": {
+          "isAutoMode": true,
+          "minWaterLevel": 30,
+          "maxWaterLevel": 90,
+          "notificationsEnabled": true,
+          "lowWaterAlert": true,
+          "pumpingAlert": true,
+          "connectionAlert": true
+        }
+      }
+    },
+    "history": {
+      "device1": {
+        "events": {
+          "evt_123456789": {
+            "timestamp": "2025-04-16T12:00:00Z",
+            "action": "PUMP_ON",
+            "mode": "AUTO",
+            "waterLevel": 30,
+            "duration": 300,
+            "amountLiters": 120
+          },
+          "evt_123456790": {
+            "timestamp": "2025-04-16T12:05:00Z",
+            "action": "PUMP_OFF",
+            "mode": "AUTO",
+            "waterLevel": 75,
+            "duration": 0,
+            "amountLiters": 0
+          }
+        }
+      }
+    },
+    "notifications": {
+      "device1": {
+        "ntf_123456789": {
+          "id": "ntf_123456789",
+          "title": "Bơm đã bật",
+          "message": "Mực nước dưới 30%. Hệ thống kích hoạt bơm.",
+          "timestamp": "2025-04-16T14:10:00Z",
+          "type": "info",
+          "read": false,
+          "relatedEvent": "evt_123456789"
+        },
+        "ntf_123456790": {
+          "id": "ntf_123456790",
+          "title": "Mực nước thấp",
+          "message": "Mực nước hiện tại đang ở mức 15%, dưới ngưỡng cảnh báo.",
+          "timestamp": "2025-04-16T14:20:00Z",
+          "type": "warning",
+          "read": false,
+          "relatedEvent": null
+        }
+      }
+    },
+    "users": {
+      "user123": {
+        "name": "Người Dùng",
+        "email": "user@example.com",
+        "devices": {
+          "device1": true
+        },
+        "settings": {
+          "theme": "light",
+          "language": "vi"
+        }
+      }
+    }
+  }

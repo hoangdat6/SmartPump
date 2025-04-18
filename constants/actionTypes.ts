@@ -1,0 +1,1 @@
+export type ACTION_TYPE = "PUMP_ON" | "PUMP_OFF" | "SYSTEM_INIT";
