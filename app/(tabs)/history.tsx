@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, FlatList, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -10,7 +10,19 @@ import { useHistory } from '@/hooks/useHistory';
 const { width } = Dimensions.get('window');
 
 export default function HistoryScreen() {
-  const { pumpEvents, chartData, viewMode, setViewMode, maxValue, totalWater } = useHistory();
+  const { pumpEvents, chartData, stackedChartData, viewMode, setViewMode, maxValue, totalWater } = useHistory();
+  const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
+  const [tooltipInfo, setTooltipInfo] = useState<{
+    segmentId: string;
+    time: string;
+    value: number;
+    position: number; // horizontal position
+  } | null>(null);
+
+  const formatDate = (date: string) => {
+    let [day, month] = date.split("/")
+    return `${day}/${month}`
+  }
 
   const renderPumpEvent = ({ item }: { item: any }) => (
     <View style={styles.pumpCard}>
@@ -19,7 +31,7 @@ export default function HistoryScreen() {
           {item.date} - {item.time}
         </ThemedText>
         <View style={[
-          styles.autoModeBadge, 
+          styles.autoModeBadge,
           { backgroundColor: item.isAuto ? '#4CAF50' : '#FFC107' }
         ]}>
           <ThemedText style={styles.autoModeText}>
@@ -27,7 +39,7 @@ export default function HistoryScreen() {
           </ThemedText>
         </View>
       </View>
-      
+
       <View style={styles.pumpCardDetails}>
         <View style={styles.detailItem}>
           <Ionicons name="time-outline" size={18} color="#6C757D" />
@@ -39,28 +51,45 @@ export default function HistoryScreen() {
           <Ionicons name="water-outline" size={18} color="#6C757D" />
           <ThemedText style={{
             color: '#0077e6',
-            // fontWeight: '600',
           }}>{item.amountLiters} lít</ThemedText>
         </View>
       </View>
     </View>
   );
 
+  const handleSegmentPress = (segment: any, index: number, columnIndex: number) => {
+    if (selectedSegment === segment.id) {
+      setSelectedSegment(null);
+      setTooltipInfo(null);
+    } else {
+      setSelectedSegment(segment.id);
+      // Calculate horizontal position based on column index (centered)
+      const columnWidth = (width - 80) / 7;
+      const position = columnIndex * columnWidth + columnWidth / 2;
+      setTooltipInfo({
+        segmentId: segment.id,
+        time: segment.time,
+        value: segment.value,
+        position: position,
+      });
+    }
+  };
+
   return (
     <ThemedView style={styles.container}>
       <View style={styles.header}>
         <ThemedText type="title" style={styles.headerTitle}>Lịch Sử Hoạt Động</ThemedText>
-        
+
         {/* Toggle between list and chart view */}
         <View style={styles.viewToggle}>
-          <TouchableOpacity 
-            style={[styles.toggleButton, viewMode === 'list' && styles.activeToggle]} 
+          <TouchableOpacity
+            style={[styles.toggleButton, viewMode === 'list' && styles.activeToggle]}
             onPress={() => setViewMode('list')}
           >
             <Ionicons name="list" size={20} color={viewMode === 'list' ? '#007BFF' : '#6C757D'} />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.toggleButton, viewMode === 'chart' && styles.activeToggle]} 
+          <TouchableOpacity
+            style={[styles.toggleButton, viewMode === 'chart' && styles.activeToggle]}
             onPress={() => setViewMode('chart')}
           >
             <Ionicons name="bar-chart" size={20} color={viewMode === 'chart' ? '#007BFF' : '#6C757D'} />
@@ -78,30 +107,73 @@ export default function HistoryScreen() {
           showsVerticalScrollIndicator={false}
         />
       ) : (
-        /* Chart View */
+        /* Stacked Chart View */
         <View style={styles.chartContainer}>
           <ThemedText type="subtitle" style={styles.chartTitle}>
             Lượng nước đã bơm (lít) theo ngày
           </ThemedText>
-          
-          {/* Simple bar chart visualization */}
-          <View style={styles.chart}>
-            {chartData.map((item, index) => (
-              <View key={index} style={styles.chartBarContainer}>
-                <View style={styles.chartBarLabelContainer}>
-                  <ThemedText style={styles.chartBarValue}>{item.value}</ThemedText>
+
+          {/* Chart wrapper for positioning context */}
+          <View style={styles.chartWrapper}>
+            {/* Tooltip that appears above the chart */}
+            {tooltipInfo && (
+              <View 
+                style={[
+                  styles.tooltipContainer,
+                  { 
+                    left: tooltipInfo.position - 40, // Center tooltip (tooltip width is 100)
+                    top: -15,  // Position above the chart
+                  }
+                ]}
+              >
+                <View style={styles.tooltip}>
+                  <ThemedText style={styles.tooltipText}>
+                    {tooltipInfo.time} - {tooltipInfo.value} lít
+                  </ThemedText>
                 </View>
-                <View style={[
-                  styles.chartBar, 
-                  { height: (item.value / maxValue) * 200 }
-                ]} />
-                <ThemedText style={styles.chartBarLabel}>{item.day}</ThemedText>
+                <View style={styles.tooltipArrow} />
               </View>
-            ))}
+            )}
+
+            {/* Stacked bar chart visualization */}
+            <View style={styles.chart}>
+              {stackedChartData.map((dayData, columnIndex) => (
+                <View key={columnIndex} style={styles.chartBarContainer}>
+                  <View style={styles.chartBarLabelContainer}>
+                    <ThemedText style={styles.chartBarValue}>{dayData.totalValue}</ThemedText>
+                  </View>
+                  <View style={styles.stackedBarContainer}>
+                    {dayData.segments.map((segment, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        style={[
+                          styles.chartBarSegment,
+                          { 
+                            height: (segment.value / maxValue) * 180,
+                            backgroundColor: segment.color,
+                            borderBottomWidth: i === 0 ? 0 : 1,
+                            borderBottomColor: 'white',
+                            // Highlight selected segment
+                            borderColor: selectedSegment === segment.id ? '#FFF' : 'transparent',
+                            borderWidth: selectedSegment === segment.id ? 2 : 0,
+                          }
+                        ]}
+                        onPress={() => handleSegmentPress(segment, i, columnIndex)}
+                      />
+                    ))}
+                  </View>
+                  <ThemedText style={styles.chartBarLabel}>{formatDate(dayData.day)}</ThemedText>
+                </View>
+              ))}
+            </View>
           </View>
-          
+
           <ThemedText style={styles.chartFooter}>
             Tổng cộng: {totalWater} lít nước
+          </ThemedText>
+
+          <ThemedText style={styles.chartHint}>
+            Chạm vào từng phần để xem thông tin chi tiết
           </ThemedText>
         </View>
       )}
@@ -194,11 +266,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#495057',
   },
+  chartWrapper: {
+    position: 'relative',
+    width: width - 40,
+    height: 280, // Added more height to accommodate tooltip
+  },
   chart: {
     width: width - 40,
     height: 250,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-end',
     paddingHorizontal: 10,
     borderBottomWidth: 1,
@@ -215,12 +291,51 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6C757D',
   },
-  chartBar: {
-    width: 20,
-    backgroundColor: '#007BFF', // Brighter chart bar
+  stackedBarContainer: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  chartBarSegment: {
+    width: 28,
+    minHeight: 4,
     borderTopLeftRadius: 3,
     borderTopRightRadius: 3,
-    marginVertical: 5,
+  },
+  tooltipContainer: {
+    position: 'absolute',
+    zIndex: 1000,
+    alignItems: 'center',
+    width: 100,
+  },
+  tooltip: {
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    padding: 8,
+    borderRadius: 6,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  tooltipText: {
+    color: 'white',
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  tooltipArrow: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: 'rgba(0,0,0,0.8)',
+    transform: [{ rotate: '180deg' }]
   },
   chartBarLabel: {
     fontSize: 14,
@@ -230,5 +345,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontWeight: '600',
     color: '#495057',
+  },
+  chartHint: {
+    marginTop: 10,
+    fontSize: 12,
+    color: '#6C757D',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

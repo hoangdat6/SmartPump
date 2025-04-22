@@ -1,159 +1,212 @@
 import { useState, useEffect } from 'react';
 import { database } from '@/firebaseConfig';
-import { ref, onValue, query, orderByChild, limitToLast, set } from 'firebase/database';
+import { ref, onValue, query, orderByChild, limitToLast } from 'firebase/database';
 
-import { ACTION_TYPE } from '@/constants/actionTypes';
-
-// Sample data for pump history
+// Kiểu dữ liệu cho lịch sử bơm nước
 export type PumpEvent = {
   id: string;
-  active: ACTION_TYPE;
   date: string;
   time: string;
   duration: string;
   amountLiters: number;
   isAuto: boolean;
-  timestamp: string;
+  startPump: string;
+  endPump: string;
 };
 
-// Chart data type
+// Kiểu dữ liệu cho biểu đồ
 export type ChartDataPoint = {
   day: string;
   value: number;
 };
 
+// Kiểu dữ liệu mới cho biểu đồ cột chồng
+export type StackedChartDataPoint = {
+  day: string;
+  totalValue: number;
+  segments: {
+    id: string;
+    value: number;
+    color: string;
+    time: string;
+  }[];
+};
+
 export function useHistory() {
   const [pumpEvents, setPumpEvents] = useState<PumpEvent[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [stackedChartData, setStackedChartData] = useState<StackedChartDataPoint[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'chart'>('list');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalWater, setTotalWater] = useState(0);
   const [maxValue, setMaxValue] = useState(0);
 
-  // Convert Firebase timestamp to local date and time
   const formatDateAndTime = (timestamp: string) => {
     if (!timestamp) return { date: 'Unknown', time: 'Unknown' };
-    
+
     const date = new Date(timestamp);
-    const localDate = date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-    
-    const localTime = date.toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    
-    return { date: localDate, time: localTime };
+    return {
+      date: date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }),
+      time: date.toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
   };
 
-  // Format duration in minutes
   const formatDuration = (seconds: number) => {
     if (!seconds || seconds <= 0) return '0 phút';
     const minutes = Math.floor(seconds / 60);
     return `${minutes} phút`;
   };
 
-  // Determine if pump was operated in auto mode
-  const isAutoMode = (mode: string) => {
-    return mode === 'AUTO';
+  const isAutoMode = (mode: string) => mode === 'AUTO';
+
+  // Hàm tạo màu ngẫu nhiên pastel
+  const generatePastelColor = () => {
+    const hue = Math.floor(Math.random() * 360);
+    return `hsl(${hue}, 70%, 80%)`;
   };
 
   useEffect(() => {
-    // Reference to pump events in Firebase
     const eventsRef = query(
       ref(database, 'history/device1/events'),
       orderByChild('timestamp'),
-      limitToLast(20) // Limit to last 20 events for better performance
+      limitToLast(20)
     );
-    
-    // Create a real-time listener for events
-    const eventsUnsubscribe = onValue(eventsRef, (snapshot) => {
-      try {
+
+    const unsubscribe = onValue(
+      eventsRef,
+      (snapshot) => {
         setIsLoading(true);
-        setTotalWater(0);
-        setMaxValue(0);
-        setChartData([]);
-        if (snapshot.exists()) {
+        try {
+          if (!snapshot.exists()) {
+            setPumpEvents([]);
+            setChartData([]);
+            setStackedChartData([]);
+            setTotalWater(0);
+            setMaxValue(0);
+            return;
+          }
+
           const eventsData = snapshot.val();
           const formattedEvents: PumpEvent[] = [];
-          
-          // Process and format the events data
-          Object.keys(eventsData).forEach(key => {
-            // select event data
-            const event = eventsData[key];
-            const { date, time } = formatDateAndTime(event.timestamp);
-            
-            if (event.action == "PUMP_ON") return; // Skip if action is not defined
+          const chartSummary: { [key: string]: number } = {};
+          // Dữ liệu cho biểu đồ cột chồng
+          const stackedChartSummary: { [key: string]: { totalValue: number, segments: any[] } } = {};
 
-            formattedEvents.push({
+          Object.entries(eventsData).forEach(([key, event]: any) => {
+            const { date, time } = formatDateAndTime(event.startPump);
+
+            const pumpEvent = {
               id: key,
-              active: event.action,
               date,
               time,
               duration: formatDuration(event.duration),
               amountLiters: event.amountLiters || 0,
               isAuto: isAutoMode(event.mode),
-              timestamp: event.timestamp
-            });
-
-            // summary data for chart
-            const chartDataPoint: ChartDataPoint = {
-              day: date,
-              value: event.amountLiters || 0
+              startPump: event.startPump,
+              endPump: event.endPump,
             };
-            const totalWaterValue = chartDataPoint.value;
-            setTotalWater(prevTotal => prevTotal + totalWaterValue);
-            setMaxValue(prevMax => Math.max(prevMax, totalWaterValue));
-            // Update chart data
-            setChartData(prevData => {
-              console.log('prevData', prevData);
-              console.log('chartDataPoint', chartDataPoint);
-              const existingPoint = prevData.find(point => point.day === date);
-              if (existingPoint) {
-                existingPoint.value += chartDataPoint.value;
-              } else {
-                return [...prevData, chartDataPoint];
-              }
-              return prevData;
+
+            formattedEvents.push(pumpEvent);
+
+            // Cộng dồn lượng nước theo ngày
+            chartSummary[date] = (chartSummary[date] || 0) + (event.amountLiters || 0);
+            
+            // Thêm từng đoạn cột cho biểu đồ cột chồng
+            if (!stackedChartSummary[date]) {
+              stackedChartSummary[date] = { totalValue: 0, segments: [] };
+            }
+            
+            stackedChartSummary[date].segments.push({
+              id: key,
+              value: event.amountLiters || 0,
+              color: generatePastelColor(),
+              time: time,
             });
+            
+            stackedChartSummary[date].totalValue += (event.amountLiters || 0);
           });
-          
-          // Sort events by timestamp (newest first)
-          formattedEvents.sort((a, b) => 
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+
+          // Tạo mảng dữ liệu cho biểu đồ
+          const newChartData: ChartDataPoint[] = Object.entries(chartSummary).map(
+            ([day, value]) => ({
+              day,
+              value,
+            })
           );
           
+          // Tạo mảng dữ liệu cho biểu đồ cột chồng
+          const newStackedChartData: StackedChartDataPoint[] = Object.entries(stackedChartSummary).map(
+            ([day, data]) => ({
+              day,
+              totalValue: data.totalValue,
+              segments: data.segments
+            })
+          );
+
+          // Sắp xếp các sự kiện theo thời gian giảm dần
+          formattedEvents.sort(
+            (a, b) => new Date(b.startPump).getTime() - new Date(a.startPump).getTime()
+          );
+
+          // Tính toán tổng lượng nước và giá trị lớn nhất
+          const total = newChartData.reduce((sum, item) => sum + item.value, 0);
+          const max = newChartData.reduce((max, item) => Math.max(max, item.value), 0);
+          
+          const parseDateString = (dateStr: string) => {
+            const [day, month, year] = dateStr.split('/');
+            return new Date(Number(year), Number(month) - 1, Number(day));
+          };
+          
+          // Sắp xếp dữ liệu biểu đồ theo thời gian tăng dần
+          newChartData.sort((a, b) => {
+            const dateA = parseDateString(a.day);
+            const dateB = parseDateString(b.day);
+            return dateA.getTime() - dateB.getTime();
+          });
+          
+          newStackedChartData.sort((a, b) => {
+            const dateA = parseDateString(a.day);
+            const dateB = parseDateString(b.day);
+            return dateA.getTime() - dateB.getTime();
+          });
+
+          // Cập nhật state
           setPumpEvents(formattedEvents);
+          setChartData(newChartData);
+          setStackedChartData(newStackedChartData);
+          setTotalWater(total);
+          setMaxValue(max);
           setError(null);
-        } else {
-          setPumpEvents([]);
+        } catch (err) {
+          setError(`Failed to load pump events: ${err instanceof Error ? err.message : String(err)}`);
+        } finally {
+          setIsLoading(false);
         }
-      } catch (err) {
-        setError(`Failed to load pump events: ${err instanceof Error ? err.message : String(err)}`);
-      } finally {
+      },
+      (error) => {
+        setError(`Events database error: ${error.message}`);
         setIsLoading(false);
       }
-    }, (error) => {
-      setError(`Events database error: ${error.message}`);
-      setIsLoading(false);
-    });
+    );
 
-    // Clean up the listeners on unmount
-    return () => {
-      eventsUnsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   return {
     pumpEvents,
     chartData,
+    stackedChartData,
     viewMode,
     setViewMode,
-    maxValue: maxValue > 0 ? maxValue : 100, // Ensure a non-zero value for chart scaling
+    maxValue,
     totalWater,
     isLoading,
     error,

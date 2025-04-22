@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Switch, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { StyleSheet, View, Switch, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,6 +33,10 @@ const COLORS = {
 };
 
 export default function SettingsScreen() {
+  const [sensorInput, setSensorInput] = useState('');
+  const [tankHeightInput, setTankHeightInput] = useState('');
+  const [pumpFlowInput, setPumpFlowInput] = useState('');
+
   const {
     isAutoMode,
     setIsAutoMode,
@@ -49,12 +53,37 @@ export default function SettingsScreen() {
     connectionAlert,
     setConnectionAlert,
     saveSettings,
+    sensorToBottom,
+    setSensorToBottom,
+    tankHeight,
+    setTankHeight,
+    pumpFlow,
+    setPumpFlow,
   } = useSettings();
+
+  const handleInputChange = useCallback((
+      text: string, 
+      setterNumber: React.Dispatch<React.SetStateAction<number>>,
+      setterInput: React.Dispatch<React.SetStateAction<string>>
+    ) => {
+    const sanitized = text.replace(',', '.');
+    // Chỉ cho phép ký tự số, dấu chấm và xóa ký tự lạ
+    if (/^[0-9]*\.?[0-9]*$/.test(sanitized) || sanitized === '') {
+      setterInput(sanitized);
+      const parsed = parseFloat(sanitized);
+      if (!isNaN(parsed)) {
+        setterNumber(parsed);
+      }
+      else {
+        setterNumber(0);
+      }
+    }
+
+  }, []);
 
   // Local state for slider values to avoid flickering
   const [localMinLevel, setLocalMinLevel] = useState(minWaterLevel);
   const [localMaxLevel, setLocalMaxLevel] = useState(maxWaterLevel);
-
 
   return (
     <ThemedView style={styles.container}>
@@ -64,7 +93,6 @@ export default function SettingsScreen() {
           Điều chỉnh các thông số hoạt động của máy bơm
         </ThemedText>
       </View>
-
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Auto Mode Toggle */}
@@ -268,6 +296,51 @@ export default function SettingsScreen() {
           )}
         </Animated.View>
 
+        {/* Sensor Configuration */}
+        <Animated.View entering={FadeInDown} style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="hardware-chip-outline" size={22} color={COLORS.primary} />
+            <ThemedText style={styles.cardTitle}>Cấu hình cảm biến</ThemedText>
+          </View>
+
+          {/* Sensor to Bottom Distance */}
+          <TextInput
+            style={styles.input}
+            keyboardType="decimal-pad"
+            value={sensorInput}
+            onChangeText={(text => handleInputChange(text, setSensorToBottom, setSensorInput))}
+            placeholder="14.05"
+          />
+
+          <View style={styles.divider} />
+
+          {/* Tank Height */}
+          <View style={styles.inputContainer}>
+            <ThemedText style={styles.inputLabel}>Chiều cao bể nước (m)</ThemedText>
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              value={tankHeightInput}
+              onChangeText={(text) => handleInputChange(text, setTankHeight, setTankHeightInput)}
+              placeholder={tankHeight.toString()}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* Pump Flow Rate */}
+          <View style={styles.inputContainer}>
+            <ThemedText style={styles.inputLabel}>Lưu lượng bơm (Lít/phút)</ThemedText>
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              value={pumpFlowInput}
+              onChangeText={(text => handleInputChange(text, setPumpFlow, setPumpFlowInput))}
+              placeholder={pumpFlow.toString()}
+            />
+          </View>
+        </Animated.View>
+
         {/* Save Button */}
         <TouchableOpacity
           style={styles.saveButtonContainer}
@@ -418,6 +491,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'PoppinsRegular',
     color: COLORS.textLight,
+  },
+  inputContainer: {
+    paddingVertical: 12,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontFamily: 'PoppinsMedium',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    fontFamily: 'PoppinsRegular',
+    color: COLORS.text,
+    backgroundColor: COLORS.background,
   },
   saveButtonContainer: {
     marginVertical: 20,

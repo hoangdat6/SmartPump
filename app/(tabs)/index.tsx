@@ -1,7 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect } from 'react';
 import { Dimensions, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { 
+  useAnimatedStyle, 
+  useSharedValue, 
+  withRepeat, 
+  withTiming, 
+  Easing, 
+  interpolate, 
+  withDelay 
+} from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/ThemedText';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -11,12 +19,32 @@ import { initDeviceStatus } from '@/utils/firebaseUtils';
 const { width } = Dimensions.get('window');
 
 export default function DashboardScreen() {
+  // Wave animation values
+  const waveOffset1 = useSharedValue(0);
+  const waveOffset2 = useSharedValue(0);
+  
   useEffect(() => {
     // Gọi hàm khởi tạo khi ứng dụng bắt đầu
     const initializeData = async () => {
       await initDeviceStatus();
     };
     initializeData();
+    
+    // Start wave animations - Fixed easing function
+    waveOffset1.value = withRepeat(
+      withTiming(1, { duration: 2000, easing: Easing.ease }),
+      -1,
+      true
+    );
+    
+    waveOffset2.value = withDelay(
+      400,
+      withRepeat(
+        withTiming(1, { duration: 2500, easing: Easing.ease }),
+        -1,
+        true
+      )
+    );
   }, []);
 
   const {
@@ -37,6 +65,23 @@ export default function DashboardScreen() {
   const waterStyle = useAnimatedStyle(() => {
     return {
       height: `${animatedLevel.value}%`,
+    };
+  });
+  
+  // Wave animations
+  const wave1Style = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: interpolate(waveOffset1.value, [0, 1], [0, -50]) }
+      ]
+    };
+  });
+  
+  const wave2Style = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: interpolate(waveOffset2.value, [0, 1], [0, -30]) }
+      ]
     };
   });
 
@@ -93,10 +138,17 @@ export default function DashboardScreen() {
         </View>
       </SafeAreaView>
 
-      {/* Water Tank Visualization */}
+      {/* Water Tank Visualization - Enhanced with waves */}
       <SafeAreaView style={styles.tankContainer}>
         <View style={styles.tankOutline}>
-          <Animated.View style={[styles.waterFill, waterStyle]} />
+          <Animated.View style={[styles.waterFill, waterStyle]}>
+            <Animated.View style={[styles.waveLayer, wave1Style]}>
+              <View style={styles.wave} />
+            </Animated.View>
+            <Animated.View style={[styles.waveLayer, wave2Style, { opacity: 0.6 }]}>
+              <View style={[styles.wave, { backgroundColor: '#4DB5FF' }]} />
+            </Animated.View>
+          </Animated.View>
           <View style={styles.measureMarks}>
             <ThemedText style={styles.markText}>100%</ThemedText>
             <ThemedText style={styles.markText}>75%</ThemedText>
@@ -223,10 +275,23 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    backgroundColor: '#0095ff',
+    backgroundColor: 'rgba(0, 149, 255, 0.7)',
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
-    zIndex: 1, // để nằm dưới
+    zIndex: 1,
+    overflow: 'hidden',
+  },
+  waveLayer: {
+    position: 'absolute',
+    width: '200%', // Make it wider than the container for continuous animation
+    height: 20, // Height of the wave
+    top: -10, // Position it to overlap with the top of the water
+  },
+  wave: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#0095ff',
+    borderRadius: 20,
   },
   measureMarks: {
     position: 'absolute',
@@ -272,7 +337,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: width * 0.7,
+    width: width * 0.6,
     padding: 16,
     borderRadius: 30,
     gap: 10,

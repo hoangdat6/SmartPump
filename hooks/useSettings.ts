@@ -11,6 +11,9 @@ export function useSettings() {
   const [lowWaterAlert, setLowWaterAlert] = useState(true);
   const [pumpingAlert, setPumpingAlert] = useState(true);
   const [connectionAlert, setConnectionAlert] = useState(true);
+  const [sensorToBottom, setSensorToBottom] = useState(14.05);
+  const [tankHeight, setTankHeight] = useState(7);
+  const [pumpFlow, setPumpFlow] = useState(1.6);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,6 +36,9 @@ export function useSettings() {
           setLowWaterAlert(data.lowWaterAlert);
           setPumpingAlert(data.pumpingAlert);
           setConnectionAlert(data.connectionAlert);
+          setSensorToBottom(data.sensorToBottom || 14.05);
+          setTankHeight(data.tankHeight || 7);
+          setPumpFlow(data.pumpFlow || 1.6);
           setError(null);
         } else {
           setError("No settings data found");
@@ -62,7 +68,10 @@ export function useSettings() {
         notificationsEnabled,
         lowWaterAlert,
         pumpingAlert,
-        connectionAlert
+        connectionAlert,
+        sensorToBottom,
+        tankHeight,
+        pumpFlow
       });
       await update(settingsRef, {
         isAutoMode,
@@ -71,7 +80,10 @@ export function useSettings() {
         notificationsEnabled,
         lowWaterAlert,
         pumpingAlert,
-        connectionAlert
+        connectionAlert,
+        sensorToBottom,
+        tankHeight,
+        pumpFlow
       });
       
       console.log('Settings saved successfully to Firebase');
@@ -88,7 +100,7 @@ export function useSettings() {
     }, 2000); // Save settings after 2 seconds of inactivity
 
     return () => clearTimeout(timeout);
-  }, [isAutoMode, minWaterLevel, maxWaterLevel, notificationsEnabled, lowWaterAlert, pumpingAlert, connectionAlert]);
+  }, [isAutoMode, minWaterLevel, maxWaterLevel, notificationsEnabled, lowWaterAlert, pumpingAlert, connectionAlert, sensorToBottom, tankHeight, pumpFlow]);
 
   return {
     // State
@@ -99,6 +111,9 @@ export function useSettings() {
     lowWaterAlert,
     pumpingAlert,
     connectionAlert,
+    sensorToBottom,
+    tankHeight,
+    pumpFlow,
     isLoading,
     error,
     
@@ -110,6 +125,9 @@ export function useSettings() {
     setLowWaterAlert,
     setPumpingAlert,
     setConnectionAlert,
+    setSensorToBottom,
+    setTankHeight,
+    setPumpFlow,
     
     // Actions
     saveSettings,

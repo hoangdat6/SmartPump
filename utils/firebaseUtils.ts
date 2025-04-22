@@ -36,7 +36,10 @@ export const initDeviceStatus = async (): Promise<void> => {
                             notificationsEnabled: true,
                             lowWaterAlert: true,
                             pumpingAlert: true,
-                            connectionAlert: true
+                            connectionAlert: true,
+                            sensorToBottom: 14.05,
+                            tackHight : 7,
+                            pumpFlow: 1.6
                         }
                     }
                 },

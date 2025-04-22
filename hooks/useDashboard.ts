@@ -85,12 +85,12 @@ export function useDashboard() {
         
         const historyUpdate = {} as any;
         historyUpdate[newEventKey] = {
-          timestamp: new Date().toISOString(),
-          action: newPumpState ? 'PUMP_ON' : 'PUMP_OFF',
           mode: 'MANUAL',
           waterLevel: waterLevel,
           duration: 0,
-          amountLiters: 0
+          amountLiters: 0,
+          startPump: new Date().toISOString(),
+          endPump: new Date().toISOString(),
         };
         await update(eventsRef, historyUpdate);
       } else {
@@ -99,13 +99,14 @@ export function useDashboard() {
         const snapshot = await get(currentEventRef);
         if (snapshot.exists()) {
           const currentEvent = snapshot.val();
-          const duration = Math.floor((new Date().getTime() - new Date(currentEvent.timestamp).getTime()) / 1000);
+          const duration = Math.floor((new Date().getTime() - new Date(currentEvent.startPump).getTime()) / 1000);
           const amountLiters = Math.round((duration / 3600) * 10); // Example calculation
           
+          console.log("update duration and amountLiters :" + duration + " " + amountLiters)
+
           // Update the event with duration and amount
           await update(currentEventRef, {
-            action: 'PUMP_OFF',
-            duration: duration,
+            duration: duration || 0,
             amountLiters: amountLiters
           });
         }        
