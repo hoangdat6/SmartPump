@@ -10,7 +10,21 @@ import { useHistory } from '@/hooks/useHistory';
 const { width } = Dimensions.get('window');
 
 export default function HistoryScreen() {
-  const { pumpEvents, chartData, stackedChartData, viewMode, setViewMode, maxValue, totalWater } = useHistory();
+  const { 
+    pumpEvents, 
+    stackedChartData, 
+    viewMode, 
+    setViewMode, 
+    maxValue, 
+    totalWater, 
+    unit,
+    setUnit,
+    isLoading,
+    error,
+    formatDuration,
+    formatWaterAmount,
+    getUnitValue 
+  } = useHistory();
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
   const [tooltipInfo, setTooltipInfo] = useState<{
     segmentId: string;
@@ -45,13 +59,13 @@ export default function HistoryScreen() {
           <Ionicons name="time-outline" size={18} color="#6C757D" />
           <ThemedText style={{
             color: '#4ade80',
-          }}>{item.duration}</ThemedText>
+          }}>{formatDuration(parseInt(item.duration))}</ThemedText>
         </View>
         <View style={styles.detailItem}>
           <Ionicons name="water-outline" size={18} color="#6C757D" />
           <ThemedText style={{
             color: '#0077e6',
-          }}>{item.amountLiters} lít</ThemedText>
+          }}>{formatWaterAmount(item.amountLiters)} {getUnitValue()}</ThemedText>
         </View>
       </View>
     </View>
@@ -97,6 +111,34 @@ export default function HistoryScreen() {
         </View>
       </View>
 
+      {/* Unit Selector */}
+      <View style={styles.unitSelector}>
+        <TouchableOpacity
+          style={[styles.unitButton, unit === 'seconds-ml' && styles.activeUnitButton]}
+          onPress={() => setUnit('seconds-ml')}
+        >
+          <ThemedText style={unit === 'seconds-ml' ? styles.activeUnitText : styles.unitText}>
+            Giây - ml
+          </ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.unitButton, unit === 'minutes-liters' && styles.activeUnitButton]}
+          onPress={() => setUnit('minutes-liters')}
+        >
+          <ThemedText style={unit === 'minutes-liters' ? styles.activeUnitText : styles.unitText}>
+            Phút - Lít
+          </ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.unitButton, unit === 'hours-m3' && styles.activeUnitButton]}
+          onPress={() => setUnit('hours-m3')}
+        >
+          <ThemedText style={unit === 'hours-m3' ? styles.activeUnitText : styles.unitText}>
+            Giờ - m³
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
+
       {viewMode === 'list' ? (
         /* List View */
         <FlatList
@@ -110,7 +152,7 @@ export default function HistoryScreen() {
         /* Stacked Chart View */
         <View style={styles.chartContainer}>
           <ThemedText type="subtitle" style={styles.chartTitle}>
-            Lượng nước đã bơm (lít) theo ngày
+            Lượng nước đã bơm ({getUnitValue()}) theo ngày
           </ThemedText>
 
           {/* Chart wrapper for positioning context */}
@@ -128,7 +170,7 @@ export default function HistoryScreen() {
               >
                 <View style={styles.tooltip}>
                   <ThemedText style={styles.tooltipText}>
-                    {tooltipInfo.time} - {tooltipInfo.value} lít
+                    {tooltipInfo.time} - {formatWaterAmount(tooltipInfo.value)} {getUnitValue()}
                   </ThemedText>
                 </View>
                 <View style={styles.tooltipArrow} />
@@ -140,7 +182,9 @@ export default function HistoryScreen() {
               {stackedChartData.map((dayData, columnIndex) => (
                 <View key={columnIndex} style={styles.chartBarContainer}>
                   <View style={styles.chartBarLabelContainer}>
-                    <ThemedText style={styles.chartBarValue}>{dayData.totalValue}</ThemedText>
+                    <ThemedText style={styles.chartBarValue}>
+                      {formatWaterAmount(dayData.totalValue)}
+                    </ThemedText>
                   </View>
                   <View style={styles.stackedBarContainer}>
                     {dayData.segments.map((segment, i) => (
@@ -169,7 +213,7 @@ export default function HistoryScreen() {
           </View>
 
           <ThemedText style={styles.chartFooter}>
-            Tổng cộng: {totalWater} lít nước
+            Tổng cộng: {formatWaterAmount(totalWater)} {getUnitValue()} nước
           </ThemedText>
 
           <ThemedText style={styles.chartHint}>
@@ -352,5 +396,29 @@ const styles = StyleSheet.create({
     color: '#6C757D',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  unitSelector: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  unitButton: {
+    padding: 8,
+    paddingHorizontal: 12,
+    marginHorizontal: 2,
+    borderRadius: 20,
+    backgroundColor: '#E9ECEF',
+  },
+  activeUnitButton: {
+    backgroundColor: '#007BFF20',
+  },
+  unitText: {
+    color: '#6C757D',
+    fontSize: 13,
+  },
+  activeUnitText: {
+    color: '#007BFF',
+    fontSize: 13,
+    fontWeight: 'bold',
   },
 });

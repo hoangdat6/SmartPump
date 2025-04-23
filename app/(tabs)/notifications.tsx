@@ -24,8 +24,8 @@ export default function NotificationsScreen() {
     notifications, 
     isLoading,
     error,
-    markAsRead, 
-    clearAll, 
+    markAsRead,
+    clearAll,
     getNotificationIcon, 
     getTitleColor 
   } = useNotifications();

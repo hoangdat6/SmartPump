@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { database } from '@/firebaseConfig';
 import { ref, onValue, query, orderByChild, limitToLast } from 'firebase/database';
 
+type UnitValue = 'seconds-ml' | 'minutes-liters' | 'hours-m3';
+
 // Kiểu dữ liệu cho lịch sử bơm nước
 export type PumpEvent = {
   id: string;
@@ -41,6 +43,7 @@ export function useHistory() {
   const [error, setError] = useState<string | null>(null);
   const [totalWater, setTotalWater] = useState(0);
   const [maxValue, setMaxValue] = useState(0);
+  const [unit, setUnit] = useState<UnitValue>('seconds-ml');
 
   const formatDateAndTime = (timestamp: string) => {
     if (!timestamp) return { date: 'Unknown', time: 'Unknown' };
@@ -59,10 +62,44 @@ export function useHistory() {
     };
   };
 
+  // Enhanced formatDuration function that considers unit
   const formatDuration = (seconds: number) => {
-    if (!seconds || seconds <= 0) return '0 phút';
-    const minutes = Math.floor(seconds / 60);
-    return `${minutes} phút`;
+    if (!seconds || seconds <= 0) return '0';
+    
+    switch (unit) {
+      case 'minutes-liters':
+        return `${(seconds / 60).toFixed(2)} phút`;
+      case 'hours-m3':
+        return `${(seconds / 3600).toFixed(2)} giờ`;
+      default: // seconds-ml
+        return `${seconds} giây`;
+    }
+  };
+
+  // New function to format water amount based on unit
+  const formatWaterAmount = (amountML: number) => {
+    if (!amountML || amountML <= 0) return '0';
+    
+    switch (unit) {
+      case 'minutes-liters':
+        return `${(amountML / 1000).toFixed(2)}`;
+      case 'hours-m3':
+        return `${(amountML / 1000000).toFixed(3)}`;
+      default: // seconds-ml
+        return amountML.toString();
+    }
+  };
+
+  // Function to get the appropriate unit string
+  const getUnitValue = () => {
+    switch (unit) {
+      case 'minutes-liters':
+        return 'lít';
+      case 'hours-m3':
+        return 'm³';
+      default: // seconds-ml
+        return 'ml';
+    }
   };
 
   const isAutoMode = (mode: string) => mode === 'AUTO';
@@ -177,7 +214,7 @@ export function useHistory() {
             const dateB = parseDateString(b.day);
             return dateA.getTime() - dateB.getTime();
           });
-
+          
           // Cập nhật state
           setPumpEvents(formattedEvents);
           setChartData(newChartData);
@@ -210,5 +247,10 @@ export function useHistory() {
     totalWater,
     isLoading,
     error,
+    unit,
+    setUnit,
+    formatDuration,
+    formatWaterAmount,
+    getUnitValue,
   };
 }
