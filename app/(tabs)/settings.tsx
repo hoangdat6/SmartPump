@@ -215,7 +215,7 @@ export default function SettingsScreen() {
         )}
 
         {/* Notification Settings */}
-        <Animated.View entering={FadeInDown} style={styles.card}>
+        {/* <Animated.View entering={FadeInDown} style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="notifications-outline" size={22} color={COLORS.primary} />
             <ThemedText style={styles.cardTitle}>Cài đặt thông báo</ThemedText>
@@ -294,7 +294,7 @@ export default function SettingsScreen() {
               </View>
             </>
           )}
-        </Animated.View>
+        </Animated.View> */}
 
         {/* Sensor Configuration */}
         <Animated.View entering={FadeInDown} style={styles.card}>
