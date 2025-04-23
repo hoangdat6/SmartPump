@@ -1,50 +1,111 @@
-# Welcome to your Expo app 👋
+# 💧 Hệ Thống Giám Sát & Điều Khiển Máy Bơm Thông Minh
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<div align="center">
+  
+![Version](https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge)
+![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-orange?style=for-the-badge)
+![Technology](https://img.shields.io/badge/tech-React%20Native%20%7C%20ESP8266-green?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-active-success?style=for-the-badge)
 
-## Get started
+</div>
 
-1. Install dependencies
+<p align="center">Ứng dụng giám sát và điều khiển máy bơm nước từ xa, sử dụng ESP8266 và Firebase.</p>
 
-   ```bash
-   npm install
-   ```
+## ✨ Tính Năng Chính
 
-2. Start the app
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🔍 Giám Sát Thời Gian Thực</h3>
+      <ul>
+        <li>Hiển thị mực nước với hiệu ứng trực quan</li>
+        <li>Cập nhật trạng thái liên tục</li>
+        <li>Báo động khi mực nước quá thấp</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>🎮 Điều Khiển Từ Xa</h3>
+      <ul>
+        <li>Bật/tắt máy bơm từ bất kỳ đâu</li>
+        <li>Giao diện điều khiển đơn giản, hiệu quả</li>
+        <li>Phản hồi tức thì từ thiết bị</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>⚙️ Chế Độ Tự Động</h3>
+      <ul>
+        <li>Cài đặt ngưỡng bật/tắt theo mực nước</li>
+        <li>Hoạt động không cần giám sát</li>
+        <li>Tiết kiệm thời gian và năng lượng</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>📊 Thống Kê & Lịch Sử</h3>
+      <ul>
+        <li>Theo dõi lượng nước đã bơm</li>
+        <li>Phân tích dữ liệu theo thời gian</li>
+        <li>Nhiều đơn vị hiển thị tùy chọn</li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
-   ```bash
-    npx expo start
-   ```
+## 🚀 Công Nghệ Sử Dụng
 
-In the output, you'll find options to open the app in a
+- **🖥️ Frontend**: React Native / Expo / TypeScript
+- **☁️ Backend**: Firebase Realtime Database
+- **🔌 Hardware**: ESP8266, HC-SR04, Relay
+- **🎭 Animation**: React Native Reanimated
+- **🧰 Navigation**: Expo Router
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🏗️ Kiến Trúc Hệ Thống
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Cấu Trúc Phần Mềm
+```
+   /devices/device1/
+  ├── name                   # Tên thiết bị
+  ├── status/                # Trạng thái hiện tại
+  │   ├── isPumpOn           # Trạng thái máy bơm
+  │   ├── waterLevel         # Mực nước hiện tại (%)
+  │   ├── wifiConnected      # Trạng thái kết nối WiFi
+  │   └── lastUpdated        # Thời điểm cập nhật cuối
+  └── settings/              # Cài đặt
+      ├── isAutoMode         # Chế độ tự động
+      ├── minWaterLevel      # Ngưỡng bật bơm (%)
+      ├── maxWaterLevel      # Ngưỡng tắt bơm (%)
+      ├── sensorToBottom     # Khoảng cách từ cảm biến đến đáy bể (cm)
+      ├── tankHeight         # Chiều cao bể nước (cm)
+      └── pumpFlow           # Lưu lượng bơm (L/phút)
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+/history/device1/
+  └── events/               # Sự kiện bơm
+      └── evt_{timestamp}/  # Chi tiết sự kiện
+            ├── mode
+            ├── waterLevel
+            ├── duration
+            ├── amountLiters
+            ├── startPump
+            ├── endPump
+      └── evt_{timestamp}
+         ...
+      └── evt_{timestamp}
+         ...
+      ...
+/notifications/device1/
+  └── ntf_{timestamp}/      # Thông báo hệ thống
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 📸 Screenshots
+<div align="center">
+  <div style="display: flex; flex-direction:row; gap: 10px;">
+    <img src="imgrm/image-1.png" width="200">
+    <img src="imgrm/image.png" width="200">
+  </div>
+  <div style="display: flex; flex-direction:row; gap: 10px;">
+    <img src="imgrm/image-2.png" width="200">
+    <img src="imgrm/image-3.png" width="200">
+    <img src="imgrm/image-4.png" width="200">
+  </div>
+</div>
